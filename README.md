@@ -85,7 +85,7 @@ Clone the repository and install the required dependencies:
 
 ```bash
 # Clone the repository
-git clone <your-repository-url>
+git clone <https://github.com/fefeluis91-crypto/LANG_CHAIN_CLASS001---PROJECT>
 cd LANG_CHAIN_CLASS01
 
 # Create and activate a virtual environment (optional but recommended)
