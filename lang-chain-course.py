@@ -24,3 +24,11 @@ def apply_discount(price: float, discount_tier: str) -> float:
     discount_percentages = {"bronze": 5, "silver": 12, "golder": 23}
     discount = discount_percentages.get(discount_tier, 0)
     return round(price * (1 - discount / 100), 2)
+
+def run_agent(question: str):
+    pass
+
+if __name__ == "__main__":
+    print("Hello, LangChain Agent (.bind_tools)!")
+    print()
+    resunt = run_agent("What is the price of a laptop after applying a gold discount?")
