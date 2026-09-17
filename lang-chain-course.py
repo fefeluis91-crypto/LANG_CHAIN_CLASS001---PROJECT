@@ -8,7 +8,7 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langsmith import traceable
 
 MAX_ITERATIONS = 5
-MODEL =     "qwen3:1.7b"
+MODEL = "qwen3:1.7b"
 
 @tool
 def get_product_price(product: str) -> float:
@@ -21,7 +21,7 @@ def get_product_price(product: str) -> float:
 def apply_discount(price: float, discount_tier: str) -> float:
     """Apply discount tier to a price and return the final price.
     Available tiers: bronze, silver, gold"""
-    print(f"   >> Executing apply_discount(price={price}, discount_tier='{discount_tier}')")
+    print(f"    >> Executing apply_discount(price={price}, discount_tier='{discount_tier}')")
     discount_percentages = {"bronze": 5, "silver": 12, "gold": 23}
     discount = discount_percentages.get(discount_tier, 0)
     return round(price * (1 - discount / 100), 2)
@@ -34,11 +34,11 @@ def run_agent(question: str):
     llm = init_chat_model(f"ollama:{MODEL}", temperature=0)
     llm_with_tools = llm.bind_tools(tools)
 
-    print(f"Question: {question}")
+    print(f"\nQuestion: {question}")
     print("=" * 60)
 
-messages = [
-    SystemMessage(
+    messages = [
+        SystemMessage(
             content=(
                 "You are a helpful shopping assistant. "
                 "You have access to a product catalog tool "
@@ -54,10 +54,46 @@ messages = [
                 "4. If the user does not specify a discount tier, "
                 "ask them which tier to use - do NOT assume one."
             )
-        )
+        ),
+        HumanMessage(content=question),
     ]
 
+    for iteration in range(1, MAX_ITERATIONS + 1):
+        print(f"\n--- Iteration {iteration} ---")
+
+        ai_message = llm_with_tools.invoke(messages)
+        messages.append(ai_message)
+
+        tool_calls = ai_message.tool_calls 
+        
+        # Se o modelo gerou resposta em texto sem invocar ferramenta
+        if not tool_calls:
+            if ai_message.content:
+                print(f"\nFinal Answer: {ai_message.content}")
+                return ai_message.content
+            else:
+                # Caso o modelo feche a iteração com conteúdo vazio
+                messages.append(HumanMessage(content="Synthesize the final answer based on the conversation."))
+                final_resp = llm.invoke(messages)
+                print(f"\nFinal Answer: {final_resp.content}")
+                return final_resp.content
+
+        # Se houver chamadas de ferramenta
+        for tool_call in tool_calls:
+            tool_name = tool_call["name"]
+            tool_args = tool_call["args"]
+            selected_tool = tools_dict[tool_name]
+            
+            tool_output = selected_tool.invoke(tool_args)
+            
+            messages.append(
+                ToolMessage(
+                    content=str(tool_output),
+                    tool_call_id=tool_call["id"]
+                )
+            )
+
 if __name__ == "__main__":
-    print("Hello, LangChain Agent (.bind_tools)!")
-    print()
-    resunt = run_agent("What is the price of a laptop after applying a gold discount?")
+    print("Iniciando o agente LangChain...")
+    resultado = run_agent("What is the price of a laptop after applying a gold discount?")
+    print(f"\nResultado final retornado: {resultado}")
